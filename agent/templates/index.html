@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonomous Self-Tasking AI Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/reactflow@11/dist/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/reactflow@11/dist/umd/index.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="bg-slate-100 text-slate-900">
+    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <header class="mb-6 flex flex-col gap-3 border-b border-slate-200 pb-5 md:flex-row md:items-end md:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-wide text-cyan-700">AI Task Planning System</p>
+                <h1 class="mt-1 text-3xl font-bold text-slate-950">Autonomous Self-Tasking AI Agent</h1>
+            </div>
+            <p id="statusMessage" class="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm">
+                The agent is ready.
+            </p>
+        </header>
+
+        <main class="grid gap-6">
+            <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="grid gap-4 lg:grid-cols-[1.4fr_0.6fr] lg:items-end">
+                    <div>
+                        <label for="goalInput" class="text-sm font-semibold text-slate-800">Enter your goal</label>
+                        <textarea
+                            id="goalInput"
+                            class="mt-2 min-h-28 w-full rounded-md border border-slate-300 bg-white p-3 text-sm outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-100"
+                            placeholder="Example: Prepare for IAS Exam"></textarea>
+                    </div>
+                    <div class="grid gap-3">
+                        <div>
+                            <p class="mb-2 text-sm font-semibold text-slate-800">Mode</p>
+                            <div class="grid grid-cols-2 overflow-hidden rounded-md border border-slate-300">
+                                <label class="mode-tab">
+                                    <input type="radio" name="mode" value="assistant" checked>
+                                    <span>Assistant</span>
+                                </label>
+                                <label class="mode-tab">
+                                    <input type="radio" name="mode" value="system">
+                                    <span>System</span>
+                                </label>
+                            </div>
+                        </div>
+                        <button id="runButton" class="rounded-md bg-cyan-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-cyan-800">
+                            Run Agent
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+                <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                    <h2 class="text-lg font-bold text-slate-950">Subject Detection</h2>
+                    <div id="subjectOutput" class="mt-4 text-sm text-slate-600">Detected subject details will appear here.</div>
+                </div>
+                <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                    <h2 class="text-lg font-bold text-slate-950">Agent Execution Pipeline</h2>
+                    <div id="pipelineOutput" class="mt-4 text-sm text-slate-600">The agent pipeline will appear after goal analysis.</div>
+                </div>
+            </section>
+
+            <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                <div class="dashboard-card">
+                    <p class="card-label">Today's Tasks</p>
+                    <p id="todayCount" class="card-value">0</p>
+                </div>
+                <div class="dashboard-card">
+                    <p class="card-label">Completed</p>
+                    <p id="completedCount" class="card-value text-emerald-700">0</p>
+                </div>
+                <div class="dashboard-card">
+                    <p class="card-label">Pending</p>
+                    <p id="pendingCount" class="card-value text-sky-700">0</p>
+                </div>
+                <div class="dashboard-card">
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="card-label">Overdue</p>
+                        <span id="overdueBadge" class="hidden rounded-full bg-red-100 px-2 py-1 text-xs font-bold text-red-700">0 overdue</span>
+                    </div>
+                    <p id="overdueCount" class="card-value text-red-700">0</p>
+                </div>
+                <div class="dashboard-card">
+                    <p class="card-label">Progress</p>
+                    <p id="progressPercent" class="card-value text-violet-700">0%</p>
+                </div>
+            </section>
+
+            <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="mb-3 flex items-center justify-between gap-4">
+                    <h2 class="text-lg font-bold text-slate-950">Task Progress</h2>
+                    <p id="progressText" class="text-sm font-medium text-slate-600">0 of 0 complete</p>
+                </div>
+                <div class="h-3 overflow-hidden rounded-full bg-slate-200">
+                    <div id="progressBar" class="h-full w-0 rounded-full bg-cyan-700 transition-all"></div>
+                </div>
+            </section>
+
+            <section class="grid gap-6 "> 
+                <!-- <div class="grid gap-6"> -->
+                    <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <h2 class="text-lg font-bold text-slate-950">Generated Plan</h2>
+                            <div class="view-toggle">
+                                <button class="view-button active" data-view="tasks">Task List</button>
+                                <button class="view-button" data-view="mindmap">Mind Map</button>
+                                <button class="view-button" data-view="flowchart">Flowchart</button>
+                                <button class="view-button" data-view="resources">Resources</button>
+                            </div>
+                        </div>
+                        <p id="goalOutput" class="mt-1 text-sm text-slate-600">Generate a goal to create trackable tasks.</p>
+                        <div id="taskListView" class="mt-4">
+                            <div id="taskList" class="grid gap-3"></div>
+                        </div>
+                        <div id="mindMapView" class="mt-4 hidden">
+                            <div id="mindMapRoot" class="flow-canvas"></div>
+                        </div>
+                        <div id="flowchartView" class="mt-4 hidden">
+                            <div id="flowchartRoot" class="flow-canvas"></div>
+                        </div>
+                        <div id="resourcesView" class="mt-4 hidden">
+                            <div id="resourcesOutput" class="resources-panel"></div>
+                        </div>
+                    </section>
+
+                    <section class="rounded-lg border border-red-200 bg-white p-5 shadow-sm">
+                        <div class="flex items-center justify-between gap-3">
+                            <h2 class="text-lg font-bold text-slate-950">Overdue Tasks</h2>
+                            <span id="overdueSectionBadge" class="rounded-full bg-red-100 px-3 py-1 text-sm font-bold text-red-700">0</span>
+                        </div>
+                        <div id="overdueList" class="mt-4 grid gap-3"></div>
+                    </section>
+
+                    <!-- <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                        <h2 class="text-lg font-bold text-slate-950">Task Complexity</h2>
+                        <div id="complexityOutput" class="mt-4 text-sm text-slate-600">Difficulty, time, resources, and dependencies will appear here.</div>
+                    </section> -->
+
+                    <!-- <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                        <h2 class="text-lg font-bold text-slate-950">Final Answer</h2>
+                        <div id="finalAnswerOutput" class="formatted-answer mt-4 text-sm text-slate-700">A detailed final answer will appear here.</div>
+                    </section>
+                 </div> --> -->
+
+                <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <h2 class="text-lg font-bold text-slate-950">Calendar</h2>
+                        <p class="text-sm text-slate-600">Click a date to assign a pending task.</p>
+                    </div>
+                    <div id="calendar"></div>
+                    <div class="calendar-companion">
+                        <section class="companion-card">
+                            <div class="companion-heading">
+                                <span class="companion-icon" aria-hidden="true">T</span>
+                                <h3>Today's Schedule</h3>
+                            </div>
+                            <div id="todayScheduleList" class="companion-list"></div>
+                        </section>
+
+                        <section class="companion-card">
+                            <div class="companion-heading">
+                                <span class="companion-icon" aria-hidden="true">U</span>
+                                <h3>Upcoming Tasks</h3>
+                            </div>
+                            <div id="upcomingTasksList" class="companion-list"></div>
+                        </section>
+
+                        <section class="companion-card">
+                            <div class="companion-heading">
+                                <span class="companion-icon" aria-hidden="true">AI</span>
+                                <h3>AI Recommendations</h3>
+                            </div>
+                            <div id="aiRecommendationsList" class="companion-list"></div>
+                        </section>
+                    </div>
+                </section>
+            </section>
+             <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                        <h2 class="text-lg font-bold text-slate-950">Task Complexity</h2>
+                        <div id="complexityOutput" class="mt-4 text-sm text-slate-600">Difficulty, time, resources, and dependencies will appear here.</div>
+                    </section> 
+
+                    <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                        <h2 class="text-lg font-bold text-slate-950">Final Answer</h2>
+                        <div id="finalAnswerOutput" class="formatted-answer mt-4 text-sm text-slate-700">A detailed final answer will appear here.</div>
+                    </section>
+                 
+                
+        </main>
+    </div>
+
+    <div id="assignModal" class="modal hidden">
+        <div class="modal-panel">
+            <h3 class="text-lg font-bold text-slate-950">Assign task to date</h3>
+            <p id="assignDateLabel" class="mt-1 text-sm text-slate-600"></p>
+            <select id="assignTaskSelect" class="mt-4 w-full rounded-md border border-slate-300 p-3 text-sm"></select>
+            <div class="mt-5 flex justify-end gap-3">
+                <button id="cancelAssignButton" class="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Cancel</button>
+                <button id="saveAssignButton" class="rounded-md bg-cyan-700 px-4 py-2 text-sm font-semibold text-white">Assign</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal hidden">
+        <div class="modal-panel">
+            <h3 class="text-lg font-bold text-slate-950">Did you complete this task?</h3>
+            <p id="confirmTaskText" class="mt-3 rounded-md bg-slate-100 p-3 text-sm text-slate-700"></p>
+            <div class="mt-5 flex justify-end gap-3">
+                <button id="confirmNoButton" class="rounded-md border border-red-300 px-4 py-2 text-sm font-semibold text-red-700">NO</button>
+                <button id="confirmYesButton" class="rounded-md bg-emerald-700 px-4 py-2 text-sm font-semibold text-white">YES</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEYS = {
+            tasks: "selfTaskingAgentTasks",
+            declined: "selfTaskingAgentDeclinedTasks",
+            notifications: "selfTaskingAgentNotifications",
+            confirmations: "selfTaskingAgentConfirmations",
+            lastGoal: "selfTaskingAgentLastGoal",
+            lastComplexity: "selfTaskingAgentLastComplexity",
+            lastSubject: "selfTaskingAgentLastSubject",
+            lastResources: "selfTaskingAgentLastResources",
+            lastAnswer: "selfTaskingAgentLastAnswer"
+        };
+
+        const goalInput = document.getElementById("goalInput");
+        const runButton = document.getElementById("runButton");
+        const statusMessage = document.getElementById("statusMessage");
+        const goalOutput = document.getElementById("goalOutput");
+        const subjectOutput = document.getElementById("subjectOutput");
+        const pipelineOutput = document.getElementById("pipelineOutput");
+        const taskList = document.getElementById("taskList");
+        const overdueList = document.getElementById("overdueList");
+        const todayScheduleList = document.getElementById("todayScheduleList");
+        const upcomingTasksList = document.getElementById("upcomingTasksList");
+        const aiRecommendationsList = document.getElementById("aiRecommendationsList");
+        const resourcesOutput = document.getElementById("resourcesOutput");
+        const complexityOutput = document.getElementById("complexityOutput");
+        const finalAnswerOutput = document.getElementById("finalAnswerOutput");
+
+        const assignModal = document.getElementById("assignModal");
+        const assignDateLabel = document.getElementById("assignDateLabel");
+        const assignTaskSelect = document.getElementById("assignTaskSelect");
+        const cancelAssignButton = document.getElementById("cancelAssignButton");
+        const saveAssignButton = document.getElementById("saveAssignButton");
+
+        const confirmModal = document.getElementById("confirmModal");
+        const confirmTaskText = document.getElementById("confirmTaskText");
+        const confirmYesButton = document.getElementById("confirmYesButton");
+        const confirmNoButton = document.getElementById("confirmNoButton");
+
+        let tasks = loadJson(STORAGE_KEYS.tasks, []);
+        let declinedTaskIds = loadJson(STORAGE_KEYS.declined, []);
+        let notificationHistory = loadJson(STORAGE_KEYS.notifications, {});
+        let confirmationHistory = loadJson(STORAGE_KEYS.confirmations, {});
+        let selectedCalendarDate = "";
+        let activeConfirmTaskId = null;
+        let calendar = null;
+        let currentSubjectAnalysis = loadJson(STORAGE_KEYS.lastSubject, null);
+        let currentResources = loadJson(STORAGE_KEYS.lastResources, null);
+        let mindMapRoot = null;
+        let flowchartRoot = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            requestNotificationPermission();
+            restoreLastResponse();
+            setupCalendar();
+            bindEvents();
+            renderAll();
+            checkDueTasks();
+            setInterval(checkDueTasks, 60000);
+        });
+
+        function bindEvents() {
+            runButton.addEventListener("click", runAgent);
+            cancelAssignButton.addEventListener("click", () => assignModal.classList.add("hidden"));
+            saveAssignButton.addEventListener("click", assignTaskToSelectedDate);
+            confirmYesButton.addEventListener("click", markConfirmedTaskComplete);
+            confirmNoButton.addEventListener("click", moveConfirmedTaskToOverdue);
+            document.querySelectorAll(".view-button").forEach(button => {
+                button.addEventListener("click", () => switchPlanView(button.dataset.view));
+            });
+        }
+
+        async function runAgent() {
+            const goal = goalInput.value.trim();
+            const selectedMode = document.querySelector('input[name="mode"]:checked').value;
+
+            if (!goal) {
+                statusMessage.textContent = "Please enter a goal before running the agent.";
+                return;
+            }
+
+            statusMessage.textContent = selectedMode === "system"
+                ? "Executing system command..."
+                : "Generating tasks...";
+
+            try {
+                const response = await fetch("/run-agent", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ goal, mode: selectedMode })
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Something went wrong while running the agent.");
+                }
+
+                localStorage.setItem(STORAGE_KEYS.lastGoal, data.goal || goal);
+                localStorage.setItem(STORAGE_KEYS.lastComplexity, JSON.stringify(data.complexity || null));
+                localStorage.setItem(STORAGE_KEYS.lastSubject, JSON.stringify(data.subject_analysis || null));
+                localStorage.setItem(STORAGE_KEYS.lastResources, JSON.stringify(data.resources || null));
+                localStorage.setItem(STORAGE_KEYS.lastAnswer, data.final_answer || "");
+                currentSubjectAnalysis = data.subject_analysis || null;
+                currentResources = data.resources || null;
+
+                if (selectedMode === "assistant") {
+                    tasks = createTasksFromBreakdown(data.breakdown || []);
+                    declinedTaskIds = [];
+                    notificationHistory = {};
+                    confirmationHistory = {};
+                    persistTrackingState();
+                }
+
+                renderGoal(data.goal || goal);
+                renderSubjectAnalysis(currentSubjectAnalysis);
+                renderPipeline(currentSubjectAnalysis);
+                renderComplexity(data.complexity);
+                renderFinalAnswer(data.final_answer || "");
+                renderAll();
+                statusMessage.textContent = data.status_message || "Tasks ready.";
+                checkDueTasks();
+            } catch (error) {
+                statusMessage.textContent = error.message;
+            }
+        }
+
+        function createTasksFromBreakdown(breakdown) {
+            return breakdown.map((step, index) => ({
+                id: `task-${Date.now()}-${index}`,
+                text: cleanTaskText(step),
+                dueDate: "",
+                completed: false
+            }));
+        }
+
+        function cleanTaskText(step) {
+            return String(step).replace(/^Step\s+\d+:\s*/i, "").trim();
+        }
+
+        function setupCalendar() {
+            const calendarElement = document.getElementById("calendar");
+            calendar = new FullCalendar.Calendar(calendarElement, {
+                initialView: "dayGridMonth",
+                height: "auto",
+                selectable: true,
+                headerToolbar: {
+                    left: "prev,next today",
+                    center: "title",
+                    right: "dayGridMonth,timeGridWeek"
+                },
+                dateClick(info) {
+                    openAssignModal(info.dateStr);
+                },
+                eventClick(info) {
+                    const task = tasks.find(item => item.id === info.event.id);
+                    if (task) {
+                        toggleTaskCompletion(task.id, !task.completed);
+                    }
+                },
+                events: []
+            });
+            calendar.render();
+        }
+
+        function renderAll() {
+            renderDashboard();
+            renderTasks();
+            renderOverdueTasks();
+            renderCalendar();
+            renderCalendarCompanion();
+            renderResourcesTab();
+            renderVisualizations();
+            persistTrackingState();
+        }
+
+        function renderDashboard() {
+            const today = todayString();
+            const overdueTasks = getOverdueTasks();
+            const completed = tasks.filter(task => task.completed).length;
+            const pending = tasks.length - completed;
+            const todayTasks = tasks.filter(task => task.dueDate === today && !task.completed).length;
+            const progress = tasks.length ? Math.round((completed / tasks.length) * 100) : 0;
+
+            setText("todayCount", todayTasks);
+            setText("completedCount", completed);
+            setText("pendingCount", pending);
+            setText("overdueCount", overdueTasks.length);
+            setText("progressPercent", `${progress}%`);
+            setText("progressText", `${completed} of ${tasks.length} complete`);
+            document.getElementById("progressBar").style.width = `${progress}%`;
+
+            const badge = document.getElementById("overdueBadge");
+            badge.textContent = `${overdueTasks.length} overdue`;
+            badge.classList.toggle("hidden", overdueTasks.length === 0);
+            setText("overdueSectionBadge", overdueTasks.length);
+        }
+
+        function renderTasks() {
+            if (!tasks.length) {
+                taskList.innerHTML = `<p class="rounded-md bg-slate-100 p-3 text-sm text-slate-600">No generated tasks yet.</p>`;
+                return;
+            }
+
+            taskList.innerHTML = tasks.map(task => `
+                <article class="task-item ${task.completed ? "task-complete" : ""}">
+                    <div class="flex items-start gap-3">
+                        <input
+                            type="checkbox"
+                            class="mt-1 h-5 w-5 rounded border-slate-300 text-cyan-700"
+                            ${task.completed ? "checked" : ""}
+                            onchange="toggleTaskCompletion('${task.id}', this.checked)">
+                        <div class="min-w-0 flex-1">
+                            <p class="font-semibold text-slate-900">${escapeHtml(task.text)}</p>
+                            <p class="mt-1 text-sm text-slate-500">${task.dueDate ? `Due: ${formatDate(task.dueDate)}` : "No due date assigned"}</p>
+                            ${renderTaskResourceDetails(task.text)}
+                        </div>
+                    </div>
+                    <input
+                        type="date"
+                        value="${escapeHtml(task.dueDate)}"
+                        class="rounded-md border border-slate-300 px-3 py-2 text-sm"
+                        onchange="updateTaskDueDate('${task.id}', this.value)">
+                </article>
+            `).join("");
+        }
+
+        function renderTaskResourceDetails(taskText) {
+            const resources = findTaskResources(taskText);
+            if (!resources.length) {
+                return "";
+            }
+
+            return `
+                <details class="task-resource-details">
+                    <summary>View Resources</summary>
+                    <div class="task-resource-grid">
+                        ${resources.map(resource => renderSmallResourceCard(resource)).join("")}
+                    </div>
+                </details>
+            `;
+        }
+
+        function renderOverdueTasks() {
+            const overdueTasks = getOverdueTasks();
+            if (!overdueTasks.length) {
+                overdueList.innerHTML = `<p class="rounded-md bg-slate-100 p-3 text-sm text-slate-600">No overdue tasks.</p>`;
+                return;
+            }
+
+            overdueList.innerHTML = overdueTasks.map(task => `
+                <article class="rounded-md border border-red-200 bg-red-50 p-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="font-semibold text-red-900">${escapeHtml(task.text)}</p>
+                            <p class="mt-1 text-sm text-red-700">Due: ${task.dueDate ? formatDate(task.dueDate) : "Moved to overdue"}</p>
+                        </div>
+                        <button class="rounded-md bg-red-700 px-3 py-2 text-sm font-semibold text-white" onclick="toggleTaskCompletion('${task.id}', true)">
+                            Complete
+                        </button>
+                    </div>
+                </article>
+            `).join("");
+        }
+
+        function renderCalendar() {
+            if (!calendar) {
+                return;
+            }
+
+            calendar.removeAllEvents();
+            tasks
+                .filter(task => task.dueDate)
+                .forEach(task => {
+                    calendar.addEvent({
+                        id: task.id,
+                        title: task.text,
+                        start: task.dueDate,
+                        allDay: true,
+                        className: task.completed ? "calendar-complete" : isOverdue(task) ? "calendar-overdue" : "calendar-pending"
+                    });
+                });
+        }
+
+        function renderCalendarCompanion() {
+            renderTodaySchedule();
+            renderUpcomingTasks();
+            renderAIRecommendations();
+        }
+
+        function renderTodaySchedule() {
+            const today = todayString();
+            const todayTasks = tasks.filter(task => task.dueDate === today);
+
+            if (!todayTasks.length) {
+                todayScheduleList.innerHTML = `<p class="companion-empty">No tasks scheduled for today.</p>`;
+                return;
+            }
+
+            todayScheduleList.innerHTML = todayTasks.map(task => `
+                <article class="schedule-row">
+                    <span class="schedule-check ${task.completed ? "is-complete" : ""}" aria-hidden="true">&#10003;</span>
+                    <div class="min-w-0 flex-1">
+                        <p class="schedule-title">${escapeHtml(task.text)}</p>
+                        <p class="schedule-meta">Due: ${formatDate(task.dueDate)}</p>
+                    </div>
+                    <span class="status-pill ${task.completed ? "status-completed" : "status-pending"}">
+                        ${task.completed ? "Completed" : "Pending"}
+                    </span>
+                </article>
+            `).join("");
+        }
+
+        function renderUpcomingTasks() {
+            const today = todayString();
+            const upcomingTasks = tasks
+                .filter(task => task.dueDate && task.dueDate > today && !task.completed)
+                .sort((first, second) => first.dueDate.localeCompare(second.dueDate))
+                .slice(0, 5);
+
+            if (!upcomingTasks.length) {
+                upcomingTasksList.innerHTML = `<p class="companion-empty">No upcoming tasks.</p>`;
+                return;
+            }
+
+            upcomingTasksList.innerHTML = upcomingTasks.map(task => `
+                <article class="upcoming-row">
+                    <p class="upcoming-date">${daysRemainingLabel(task.dueDate)}</p>
+                    <p class="upcoming-task">&bull; ${escapeHtml(task.text)}</p>
+                    <p class="schedule-meta">Due: ${formatDate(task.dueDate)}</p>
+                </article>
+            `).join("");
+        }
+
+        function renderAIRecommendations() {
+            const recommendations = buildAIRecommendations();
+
+            aiRecommendationsList.innerHTML = recommendations.map(recommendation => `
+                <article class="recommendation-row">
+                    <span class="recommendation-icon" aria-hidden="true">&#10003;</span>
+                    <p>${escapeHtml(recommendation)}</p>
+                </article>
+            `).join("");
+        }
+
+        function buildAIRecommendations() {
+            const today = todayString();
+            const completedCount = tasks.filter(task => task.completed).length;
+            const progress = tasks.length ? Math.round((completedCount / tasks.length) * 100) : 0;
+            const overdueTasks = getOverdueTasks();
+            const dueThisWeek = tasks.filter(task => {
+                if (!task.dueDate || task.completed) {
+                    return false;
+                }
+                const days = getDaysRemaining(task.dueDate);
+                return days >= 0 && days <= 7;
+            });
+            const todayTasks = tasks.filter(task => task.dueDate === today && !task.completed);
+            const pendingByDueDate = tasks
+                .filter(task => task.dueDate && !task.completed)
+                .sort((first, second) => first.dueDate.localeCompare(second.dueDate));
+            const completedWithDates = tasks.filter(task => task.completed && task.dueDate);
+            const recommendations = [];
+
+            if (dueThisWeek.length) {
+                recommendations.push(`You have ${dueThisWeek.length} task${dueThisWeek.length === 1 ? "" : "s"} due this week.`);
+            }
+            if (pendingByDueDate.length >= 2) {
+                recommendations.push(`Complete ${pendingByDueDate[0].text} before ${pendingByDueDate[1].text}.`);
+            } else if (pendingByDueDate.length === 1) {
+                recommendations.push(`Focus on ${pendingByDueDate[0].text} as your next priority.`);
+            }
+            if (completedWithDates.length) {
+                recommendations.push("Schedule revision for completed topics so progress is retained.");
+            }
+            if (overdueTasks.length) {
+                recommendations.push("You have overdue tasks that should be rescheduled or completed first.");
+            }
+            if (progress < 50 && tasks.length) {
+                recommendations.push("Current completion rate is below 50%, so focus on smaller high-priority tasks today.");
+            } else if (progress >= 80) {
+                recommendations.push("Progress is strong; use the calendar to reserve time for final review.");
+            }
+            if (todayTasks.length) {
+                recommendations.push(`Finish today's ${todayTasks.length} pending task${todayTasks.length === 1 ? "" : "s"} before adding new work.`);
+            }
+
+            if (!recommendations.length) {
+                recommendations.push("Assign due dates to generated tasks to unlock smarter calendar recommendations.");
+                recommendations.push("Start with one priority task and mark it complete to build progress.");
+                recommendations.push("Use the calendar to spread tasks across realistic study or work sessions.");
+            }
+
+            return recommendations.slice(0, 5);
+        }
+
+        function renderGoal(goal) {
+            goalOutput.textContent = goal ? `Goal: ${goal}` : "Generate a goal to create trackable tasks.";
+        }
+
+        function renderSubjectAnalysis(analysis) {
+            if (!analysis) {
+                subjectOutput.textContent = "Detected subject details will appear here.";
+                return;
+            }
+
+            const topics = Array.isArray(analysis.topics) ? analysis.topics : [];
+            subjectOutput.innerHTML = `
+                <div class="subject-card">
+                    <div>
+                        <p class="metric-label">Detected Subject</p>
+                        <p class="subject-title">${escapeHtml(analysis.subject)}</p>
+                    </div>
+                    <div class="subject-grid">
+                        <div>
+                            <p class="metric-label">Goal Type</p>
+                            <p class="metric-value">${escapeHtml(analysis.goalType)}</p>
+                        </div>
+                        <div>
+                            <p class="metric-label">Domain</p>
+                            <p class="metric-value">${escapeHtml(analysis.domain)}</p>
+                        </div>
+                        <div>
+                            <p class="metric-label">AI Confidence Score</p>
+                            <p class="metric-value text-cyan-700">${escapeHtml(analysis.confidence)}%</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="mt-4 font-semibold text-slate-900">Topics Found:</p>
+                        <ul class="resource-list">
+                            ${topics.map(topic => `<li><span aria-hidden="true">&#10003;</span>${escapeHtml(topic)}</li>`).join("")}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPipeline(analysis) {
+            if (!analysis || !Array.isArray(analysis.pipeline)) {
+                pipelineOutput.textContent = "The agent pipeline will appear after goal analysis.";
+                return;
+            }
+
+            pipelineOutput.innerHTML = `
+                <div class="pipeline-list">
+                    ${analysis.pipeline.map((step, index) => `
+                        <div class="pipeline-step">
+                            <span class="pipeline-check" aria-hidden="true">&#10003;</span>
+                            <span>${escapeHtml(step)}</span>
+                        </div>
+                        ${index < analysis.pipeline.length - 1 ? `<div class="pipeline-arrow">&darr;</div>` : ""}
+                    `).join("")}
+                </div>
+            `;
+        }
+
+        function renderComplexity(complexity) {
+            if (!complexity) {
+                complexityOutput.textContent = "Difficulty, time, resources, and dependencies will appear here.";
+                return;
+            }
+
+            const resources = Array.isArray(complexity.resources) ? complexity.resources : [];
+            const dependencies = Array.isArray(complexity.dependencies) ? complexity.dependencies : [];
+
+            complexityOutput.innerHTML = `
+                <div class="complexity-grid">
+                    <div>
+                        <p class="metric-label">Difficulty</p>
+                        <p class="metric-value difficulty-${escapeHtml(complexity.difficulty).toLowerCase()}">${escapeHtml(complexity.difficulty)}</p>
+                    </div>
+                    <div>
+                        <p class="metric-label">Estimated Time</p>
+                        <p class="metric-value">${escapeHtml(complexity.estimated_time)}</p>
+                    </div>
+                </div>
+                <p class="mt-4 font-semibold text-slate-900">Resources Needed:</p>
+                <ul class="resource-list">
+                    ${resources.map(resource => `<li><span aria-hidden="true">&#10003;</span>${escapeHtml(resource)}</li>`).join("")}
+                </ul>
+                <p class="font-semibold text-slate-900">Dependencies:</p>
+                <p class="dependency-chain">${dependencies.map(item => escapeHtml(item)).join(" &rarr; ")}</p>
+            `;
+        }
+
+        function renderFinalAnswer(answer) {
+            finalAnswerOutput.innerHTML = answer
+                ? formatMultilineText(answer)
+                : "A detailed final answer will appear here.";
+        }
+
+        function renderResourcesTab() {
+            if (!currentResources || !currentResources.categories) {
+                resourcesOutput.innerHTML = `<p class="companion-empty">Generate a goal to view AI resources.</p>`;
+                return;
+            }
+
+            const categoryIcons = {
+                Books: "B",
+                Websites: "W",
+                Videos: "V",
+                Notes: "N",
+                Tools: "T",
+                "Practice Resources": "P"
+            };
+            const categories = Object.entries(currentResources.categories);
+
+            resourcesOutput.innerHTML = `
+                <div class="resources-header">
+                    <div>
+                        <p class="metric-label">AI Generated Resources</p>
+                        <h3>Recommended study and execution materials</h3>
+                    </div>
+                    <span>${categories.length} categories</span>
+                </div>
+                <div class="resource-category-grid">
+                    ${categories.map(([category, resources]) => `
+                        <section class="resource-category-card">
+                            <div class="resource-category-heading">
+                                <span class="resource-category-icon" aria-hidden="true">${categoryIcons[category] || "R"}</span>
+                                <h4>${escapeHtml(category)}</h4>
+                            </div>
+                            <div class="resource-card-list">
+                                ${(resources || []).map(resource => renderResourceCard(resource)).join("")}
+                            </div>
+                        </section>
+                    `).join("")}
+                </div>
+            `;
+        }
+
+        function renderResourceCard(resource) {
+            return `
+                <article class="resource-card">
+                    <p class="resource-title">${escapeHtml(resource.title)}</p>
+                    <div class="resource-meta-row">
+                        <span class="quality-pill difficulty-${escapeHtml(resource.difficulty).toLowerCase()}">${escapeHtml(resource.difficulty)}</span>
+                        <span class="priority-pill priority-${escapeHtml(resource.priority).toLowerCase()}">${escapeHtml(resource.priority)} Priority</span>
+                    </div>
+                </article>
+            `;
+        }
+
+        function renderSmallResourceCard(resource) {
+            return `
+                <article class="task-resource-card">
+                    <p>${escapeHtml(resource.title)}</p>
+                    <div>
+                        <span class="quality-pill difficulty-${escapeHtml(resource.difficulty).toLowerCase()}">${escapeHtml(resource.difficulty)}</span>
+                        <span class="priority-pill priority-${escapeHtml(resource.priority).toLowerCase()}">${escapeHtml(resource.priority)}</span>
+                    </div>
+                </article>
+            `;
+        }
+
+        function findTaskResources(taskText) {
+            if (!currentResources || !Array.isArray(currentResources.taskResources)) {
+                return [];
+            }
+
+            const normalizedTask = normalizeTaskText(taskText);
+            const match = currentResources.taskResources.find(item => normalizeTaskText(item.taskText) === normalizedTask);
+
+            if (match && Array.isArray(match.resources)) {
+                return match.resources;
+            }
+
+            return currentResources.taskResources.find(item => normalizedTask.includes(normalizeTaskText(item.taskText).slice(0, 24)))?.resources || [];
+        }
+
+        function normalizeTaskText(text) {
+            return String(text).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+        }
+
+        function renderVisualizations() {
+            renderMindMap();
+            renderFlowchart();
+        }
+
+        function renderMindMap() {
+            const root = document.getElementById("mindMapRoot");
+            if (!root) {
+                return;
+            }
+
+            if (!currentSubjectAnalysis) {
+                root.innerHTML = `<div class="empty-flow">Generate a goal to view the mind map.</div>`;
+                return;
+            }
+
+            const { nodes, edges } = buildMindMapData(currentSubjectAnalysis);
+            renderReactFlow(root, nodes, edges, "mindmap");
+        }
+
+        function renderFlowchart() {
+            const root = document.getElementById("flowchartRoot");
+            if (!root) {
+                return;
+            }
+
+            if (!currentSubjectAnalysis) {
+                root.innerHTML = `<div class="empty-flow">Generate a goal to view the flowchart.</div>`;
+                return;
+            }
+
+            const { nodes, edges } = buildFlowchartData(currentSubjectAnalysis);
+            renderReactFlow(root, nodes, edges, "flowchart");
+        }
+
+        function renderReactFlow(root, nodes, edges, type) {
+            const reactFlowApi = window.ReactFlow || window.ReactFlowRenderer;
+            if (!window.React || !window.ReactDOM || !reactFlowApi) {
+                root.innerHTML = `<div class="empty-flow">React Flow could not load. Check your internet connection and refresh.</div>`;
+                return;
+            }
+
+            const ReactFlowComponent = reactFlowApi.default || reactFlowApi.ReactFlow || reactFlowApi;
+            const Controls = reactFlowApi.Controls;
+            const Background = reactFlowApi.Background;
+            const MiniMap = reactFlowApi.MiniMap;
+            const children = [];
+
+            if (Controls) {
+                children.push(React.createElement(Controls, { key: "controls" }));
+            }
+            if (MiniMap && type === "mindmap") {
+                children.push(React.createElement(MiniMap, { key: "minimap", zoomable: true, pannable: true }));
+            }
+            if (Background) {
+                children.push(React.createElement(Background, { key: "background", gap: 18 }));
+            }
+
+            const element = React.createElement(
+                ReactFlowComponent,
+                {
+                    nodes,
+                    edges,
+                    fitView: true,
+                    nodesDraggable: true,
+                    panOnDrag: true,
+                    zoomOnScroll: true,
+                    zoomOnPinch: true,
+                    proOptions: { hideAttribution: true }
+                },
+                children
+            );
+
+            if (type === "mindmap") {
+                mindMapRoot = mindMapRoot || ReactDOM.createRoot(root);
+                mindMapRoot.render(element);
+            } else {
+                flowchartRoot = flowchartRoot || ReactDOM.createRoot(root);
+                flowchartRoot.render(element);
+            }
+        }
+
+        function buildMindMapData(analysis) {
+            const topics = Array.isArray(analysis.topics) ? analysis.topics : [];
+            const topicTasks = analysis.topicTasks || {};
+            const nodes = [{
+                id: "root",
+                data: { label: analysis.subject },
+                position: { x: 0, y: 200 },
+                className: "flow-root-node"
+            }];
+            const edges = [];
+
+            topics.slice(0, 7).forEach((topic, topicIndex) => {
+                const topicId = `topic-${topicIndex}`;
+                const topicY = topicIndex * 150;
+                nodes.push({
+                    id: topicId,
+                    data: { label: topic },
+                    position: { x: 320, y: topicY },
+                    className: "flow-topic-node"
+                });
+                edges.push({ id: `root-${topicId}`, source: "root", target: topicId, animated: true });
+
+                const tasksForTopic = (topicTasks[topic] || [`Study ${topic}`, `Practice ${topic}`, `Revise ${topic}`]).slice(0, 3);
+                tasksForTopic.forEach((task, taskIndex) => {
+                    const taskId = `task-${topicIndex}-${taskIndex}`;
+                    nodes.push({
+                        id: taskId,
+                        data: { label: task },
+                        position: { x: 650, y: topicY + taskIndex * 48 - 36 },
+                        className: "flow-task-node"
+                    });
+                    edges.push({ id: `${topicId}-${taskId}`, source: topicId, target: taskId });
+                });
+            });
+
+            return { nodes, edges };
+        }
+
+        function buildFlowchartData(analysis) {
+            const steps = Array.isArray(analysis.flowSteps) ? analysis.flowSteps : [
+                "Goal", "Subject Detection", "Topic Extraction", "Task Planning", "Review", "Complete"
+            ];
+            const nodes = steps.map((step, index) => ({
+                id: `flow-${index}`,
+                data: { label: step },
+                position: { x: 180, y: index * 110 },
+                className: index === 0 ? "flow-root-node" : "flow-topic-node"
+            }));
+            const edges = steps.slice(1).map((_, index) => ({
+                id: `edge-${index}`,
+                source: `flow-${index}`,
+                target: `flow-${index + 1}`,
+                animated: true,
+            }));
+
+            return { nodes, edges };
+        }
+
+        function switchPlanView(view) {
+            document.querySelectorAll(".view-button").forEach(button => {
+                button.classList.toggle("active", button.dataset.view === view);
+            });
+            document.getElementById("taskListView").classList.toggle("hidden", view !== "tasks");
+            document.getElementById("mindMapView").classList.toggle("hidden", view !== "mindmap");
+            document.getElementById("flowchartView").classList.toggle("hidden", view !== "flowchart");
+            document.getElementById("resourcesView").classList.toggle("hidden", view !== "resources");
+
+            if (calendar) {
+                setTimeout(() => {
+                    renderVisualizations();
+                    calendar.updateSize();
+                }, 50);
+            }
+        }
+
+        function openAssignModal(dateStr) {
+            selectedCalendarDate = dateStr;
+            const assignableTasks = tasks.filter(task => !task.completed);
+
+            assignDateLabel.textContent = `Selected date: ${formatDate(dateStr)}`;
+            assignTaskSelect.innerHTML = assignableTasks.length
+                ? assignableTasks.map(task => `<option value="${task.id}">${escapeHtml(task.text)}</option>`).join("")
+                : `<option value="">No pending tasks available</option>`;
+            saveAssignButton.disabled = assignableTasks.length === 0;
+            assignModal.classList.remove("hidden");
+        }
+
+        function assignTaskToSelectedDate() {
+            const taskId = assignTaskSelect.value;
+            if (!taskId || !selectedCalendarDate) {
+                return;
+            }
+
+            updateTaskDueDate(taskId, selectedCalendarDate);
+            assignModal.classList.add("hidden");
+            statusMessage.textContent = "Task assigned to calendar date.";
+        }
+
+        function updateTaskDueDate(taskId, dueDate) {
+            tasks = tasks.map(task => task.id === taskId ? { ...task, dueDate } : task);
+            declinedTaskIds = declinedTaskIds.filter(id => id !== taskId);
+            renderAll();
+            checkDueTasks();
+        }
+
+        function toggleTaskCompletion(taskId, completed) {
+            tasks = tasks.map(task => task.id === taskId ? { ...task, completed } : task);
+            if (completed) {
+                declinedTaskIds = declinedTaskIds.filter(id => id !== taskId);
+            }
+            renderAll();
+        }
+
+        function checkDueTasks() {
+            const today = todayString();
+            const dueTasks = tasks.filter(task => task.dueDate === today && !task.completed);
+
+            dueTasks.forEach(task => {
+                const notificationKey = `${task.id}:${today}`;
+                if ("Notification" in window && Notification.permission === "granted" && !notificationHistory[notificationKey]) {
+                    new Notification("Task Reminder", {
+                        body: `You planned to complete:\n${task.text}`
+                    });
+                    notificationHistory[notificationKey] = true;
+                }
+            });
+
+            persistJson(STORAGE_KEYS.notifications, notificationHistory);
+
+            const taskForModal = dueTasks.find(task => !confirmationHistory[`${task.id}:${today}`]);
+            if (taskForModal && confirmModal.classList.contains("hidden")) {
+                activeConfirmTaskId = taskForModal.id;
+                confirmTaskText.textContent = taskForModal.text;
+                confirmationHistory[`${taskForModal.id}:${today}`] = true;
+                persistJson(STORAGE_KEYS.confirmations, confirmationHistory);
+                confirmModal.classList.remove("hidden");
+            }
+        }
+
+        function markConfirmedTaskComplete() {
+            if (activeConfirmTaskId) {
+                toggleTaskCompletion(activeConfirmTaskId, true);
+            }
+            activeConfirmTaskId = null;
+            confirmModal.classList.add("hidden");
+        }
+
+        function moveConfirmedTaskToOverdue() {
+            if (activeConfirmTaskId && !declinedTaskIds.includes(activeConfirmTaskId)) {
+                declinedTaskIds.push(activeConfirmTaskId);
+            }
+            activeConfirmTaskId = null;
+            confirmModal.classList.add("hidden");
+            renderAll();
+        }
+
+        function getOverdueTasks() {
+            return tasks.filter(task => isOverdue(task));
+        }
+
+        function isOverdue(task) {
+            if (task.completed) {
+                return false;
+            }
+
+            return declinedTaskIds.includes(task.id) || Boolean(task.dueDate && task.dueDate < todayString());
+        }
+
+        function restoreLastResponse() {
+            renderGoal(localStorage.getItem(STORAGE_KEYS.lastGoal));
+            renderSubjectAnalysis(currentSubjectAnalysis);
+            renderPipeline(currentSubjectAnalysis);
+            renderComplexity(loadJson(STORAGE_KEYS.lastComplexity, null));
+            renderResourcesTab();
+            renderFinalAnswer(localStorage.getItem(STORAGE_KEYS.lastAnswer) || "");
+        }
+
+        function persistTrackingState() {
+            persistJson(STORAGE_KEYS.tasks, tasks);
+            persistJson(STORAGE_KEYS.declined, declinedTaskIds);
+            persistJson(STORAGE_KEYS.notifications, notificationHistory);
+            persistJson(STORAGE_KEYS.confirmations, confirmationHistory);
+        }
+
+        function requestNotificationPermission() {
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+        }
+
+        function todayString() {
+            const today = new Date();
+            return toDateInputValue(today);
+        }
+
+        function getDaysRemaining(dueDate) {
+            const today = new Date(`${todayString()}T00:00:00`);
+            const target = new Date(`${dueDate}T00:00:00`);
+            return Math.round((target - today) / 86400000);
+        }
+
+        function daysRemainingLabel(dueDate) {
+            const days = getDaysRemaining(dueDate);
+
+            if (days === 1) {
+                return "Tomorrow";
+            }
+            if (days === 0) {
+                return "Today";
+            }
+            return `In ${days} Days`;
+        }
+
+        function toDateInputValue(date) {
+            const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            return offsetDate.toISOString().split("T")[0];
+        }
+
+        function formatDate(value) {
+            if (!value) {
+                return "No date";
+            }
+
+            return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "short",
+                day: "numeric"
+            });
+        }
+
+        function setText(id, value) {
+            document.getElementById(id).textContent = value;
+        }
+
+        function loadJson(key, fallback) {
+            try {
+                const value = localStorage.getItem(key);
+                return value ? JSON.parse(value) : fallback;
+            } catch (error) {
+                return fallback;
+            }
+        }
+
+        function persistJson(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        function formatMultilineText(text) {
+            return escapeHtml(text).replace(/\n/g, "<br>");
+        }
+
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        window.toggleTaskCompletion = toggleTaskCompletion;
+        window.updateTaskDueDate = updateTaskDueDate;
+    </script>
+</body>
+</html>
